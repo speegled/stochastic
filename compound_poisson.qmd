@@ -1,0 +1,142 @@
+# Compound Poisson Processes {#chap-cpp}
+
+In this chapter, we consider a stochastic process $X(t)$ which is not necessarily a counting process. We say $X(t)$ is a *compound Poisson process* if 
+\[
+X(t) = \sum_{i = 1}^{N(t)} Y_i
+\]
+where $N(t)$ is a Poisson process with rate $\lambda$ and $Y_1, \ldots$ are independent, identically distributed random variables, which are also independent of $N(t)$.
+
+::: {#exm-compoundprocess1}
+
+## BSC enterings
+
+If you let $X(t)$ denote the number of people who enter Busch Student Center at or before time $t$, then this may not be a Poisson process. If we count all of the people who enter as a group as entering at the same time, then we could possibly model it as a compound Poisson process, where the arrival times of groups is a Poisson process, and the number of people in the group is a separate random variable (that we would need to model).
+
+:::
+
+Other examples given in the text include the number of people involved in car accidents at a certain intersection, the amount of money that visitors to a casino lose, and number of people entering a movie theater. 
+
+We can compute the mean and variance of a compound Poisson process as follows:
+
+::: {#thm-meanvariancecompoundprocess}
+
+## Mean and Variance of Compound Poisson Process
+
+The mean $E[X(t)] = \lambda t E[Y]$ and the variance is ${\mathrm{Var}}(X(t)) = \lambda t E[Y^2]$.
+:::
+
+Let's look at a simulation of a compound Poisson process in order to check these results via an example. We assume that $N(t)$ is a Poisson process with rate 2, and $Y_i$ are iid uniform random variables on the interval $[0, 1]$. From Theorem @thm-meanvariancecompoundprocess, we see that 
+\[
+E[X(3)] = 2 \times 3 \times \frac 12 = 3
+\]
+and 
+\[
+{\mathrm{Var}}(X(t)) = 3 \times 2 \times \int_0^1 x^2\, dx = 2
+\]
+We check this via a simulation. Note that we don't need to know **when** the events occur exactly, only how many of them there are before time $t = 3$. That is given by `r`pois(1, 6)`, as below. 
+
+```{r}
+lambda <- 2
+t <- 3
+num_events <- rpois(1, lambda * t)
+x_3 <- sum(runif(num_events)) #if num_events == 0, then this gives 0, which is what we want
+```
+
+That is how we simulate a single trial of the compound Poisson process. To do multiple trials, we put it inside of `replicate`.
+
+```{r}
+sim_data <- replicate(10000, {
+  num_events <- rpois(1, lambda * t)
+  x_3 <- sum(runif(num_events)) 
+})
+mean(sim_data)
+var(sim_data)
+```
+
+If you run the above code a few times, you will see that the mean and variance of the compound Poisson process are as predicted by Theorem @thm-meanvariancecompoundprocess.
+
+## Modeling a Compound Poisson Process
+
+In this section, we are interested in the reverse problem: if we are given data, how do we estimate $\lambda$ and the distribution of $Y_1, \ldots, Y_{N(t)}$? For our purposes, we will make some assumptions about what kind of random variable $Y_1, \ldots, Y_n$ are and then use a goodness-of-fit test to see whether it is a reasonable fit to the data.
+
+We start by modeling data that we **know** the true generative process of. This is so that we can see that out technique is working. In the next example, we will apply our technique to data that we don't know the true generative process for.
+
+### Simulated data
+
+We assume that $N(t)$ is Poisson with rate 2, and that $Y_1, \ldots, Y_{N(t)}$ are iid **zero-truncated** Poisson random variables with rate 3. Let's imagine that this is the number of people entering a movie theater. For our simulated data, we are going to assume that we have collected data from time 0 to time 4, and we noted the time of arrival and the number of We create our simulated data as follows. The arrival times $S_1, \ldots, S_{N(t)}$ say **when** the groups arrived to the theater, and the values $Y_1, \ldots, Y_{N(t)}$ say **how many** people were in each group. We use zero-truncated Poisson because we are assuming that each $Y_i > 0$. 
+
+```{r}
+lambda <- 2
+t <- 4
+num_events <- rpois(1, lambda * t)
+time_of_events <- sort(runif(num_events, 0, t))
+num_in_family <- actuar::rztpois(num_events, 3) #sampling from zero-truncated
+data.frame(trial = 1,
+           time = time_of_events,
+           num_in_family = num_in_family)
+```
+
+To create a large sample of this type, we use `purrr::map_df`.
+
+```{r}
+sim_data <- purrr::map_df(1:300, function(x) {
+  num_events <- rpois(1, lambda * t)
+  time_of_events <- sort(runif(num_events, 0, t))
+  num_in_family <- actuar::rztpois(num_events, 3) #sampling from zero-truncated
+  data.frame(trial = x,
+             time = time_of_events,
+             num_in_family = num_in_family)
+})
+```
+
+First things first, let's check whether every trial had at least one family arrive:
+
+```{r}
+length(unique(sim_data$trial)) #yep!
+```
+
+In order to estimate the rate of the Poisson process $N(t)$, we recall that the expected value of $N(4)$ is $4\lambda$. We can estimate $E[N(4)]$ from the data by counting the total number of occurrences by time 4, and dividing by the total number of trials. In other words, 
+
+```{r}
+nrow(sim_data)/300
+```
+
+Our estimate for trhe mean of $N(4)$ is `r round(nrow(sim_data)/300, 3)`, so our estimate for $\lambda$ is our previous estimate divided by 4; namely,  `r round(nrow(sim_data)/300/4, 3)`. You should compare that to the true value of 2.
+
+Now we turn to estimating the mean of the truncated Poisson process. The method of moments estimator for $\lambda$, is given by 
+\[
+\frac {\hat \lambda}{1 - e^{-\hat \lambda}} = \overline{x}
+\]
+where $\overline{x}$ is the sample mean. We compute the sample mean as follows:
+
+```{r}
+mean(sim_data$num_in_family)
+```
+
+and to solve for $\hat \lambda$, well, that is a bit tricky, but we already know it is 3. Let's just check:
+
+```{r}
+3/(1 - exp(-3))
+```
+
+Pretty good. If we want to solve for $\hat \lambda$, we can use `optimize`:
+
+```{r}
+optimize(f = function(lambda) {(lambda/(1 - exp(-lambda)) - mean(sim_data$num_in_family))^2 },
+         interval = c(0, 10))
+```
+
+Our estimate $\hat \lambda$ is given by the value in `$minimum`.  We can also check via a plot that it is about $\hat \lambda = 3$.
+
+```{r}
+curve(x/(1 - exp(-x)), from = 0, to = 5)
+abline(h = mean(sim_data$num_in_family))
+abline(v = 3, lty = 2, col = 2)
+```
+
+
+
+
+
+
+
