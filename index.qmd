@@ -1,4 +1,3 @@
 # Preface {.unnumbered}
 
 These are notes to accompany STAT 4930/STAT 5930 at Saint Louis University.
-

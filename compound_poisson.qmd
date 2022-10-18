@@ -79,6 +79,7 @@ data.frame(trial = 1,
 To create a large sample of this type, we use `purrr::map_df`.
 
 ```{r}
+set.seed(1)
 sim_data <- purrr::map_df(1:300, function(x) {
   num_events <- rpois(1, lambda * t)
   time_of_events <- sort(runif(num_events, 0, t))
@@ -134,6 +135,83 @@ abline(h = mean(sim_data$num_in_family))
 abline(v = 3, lty = 2, col = 2)
 ```
 
+
+### Non-simulated data
+
+We consider the airplane crash data from [Kaggle](https://www.kaggle.com/datasets/thedevastator/airplane-crashes-and-fatalities). I imagine that airplane crashes are **not** a homogeneous Poisson process over the time frame of this data set (1908-present), because, well, that would just be too much to believe! Safety has improved (surely) but also the number of flights has increased, so it is not at all clear what to make of it. We'll probably need to restrict down to a time interval where the rate of crashes is approximately constant.
+
+```{r}
+#| warning: false
+library(tidyverse)
+dd <- read.csv("data/airplane_crashes.csv") %>% 
+  janitor::clean_names()
+dd <- as_tibble(dd)
+dd
+```
+
+The first thing I want to do is create a single date/time variable that encodes the time of the crash. To do so, we use the R package `lubridate`. If a crash doesn't have an associated time, we just assume it happened at noon. I don't think that will make a difference, but we will need to make sure our bins are not too small, in which case it would make a difference. Alternatively, I could've deleted those, but that seems like a lot of data to delete (42 percent!). One stil fails to parse (index 3267) because there is a typo in the time (114:20). Let's assume they meant 14:20.
+
+```{r}
+mean(dd$time == "")
+dd <- dd %>% 
+  mutate(time = ifelse(time == "", "12:00", time)) %>% 
+  mutate(time = ifelse(time == "114:20", "14:20", time)) %>% 
+  mutate(date_time = lubridate::mdy_hm(paste0(date, time, sep = " ")))
+```
+
+OK, now let's get a histogram of the number of **accidents** over time.
+
+```{r}
+ggplot(dd, aes(x = date_time)) + 
+  geom_histogram(bins = 100)
+```
+
+We can see that this is almost surely not a homogeneous Poisson process, but if we restrict to, say, 1990-2000 it might be. Let's check it out.
+
+```{r}
+aa <- dd %>% 
+  filter(date_time > lubridate::mdy("12/31/1989") & date_time < lubridate::mdy("1/1/2001"))
+hist(aa$date_time, breaks = 36)
+```
+
+Let's check to see whether this passes a goodness-of-fit test for a homogeneous Poisson process. We estimate the rate in terms of accidents per year. Note that there are 11 years in the data. We need to be really careful with units here! The units in `breaks` are **seconds** and we computed the rate in terms of **years**! We also need to check the number of bins that `hist` makes; just because you tell it to do 30, for example, doesn't mean that there will be **exactly** 30 bins!!
+
+::: callout-tryit
+Create a histogram using `hist(aa$date_time, breaks = 30)`, and count the number of bins. (It is the length of the counts variable that `hist` creates.) You'll see it is not 30!
+:::
+
+```{r}
+rate <- 851/11
+ss <- hist(aa$date_time, breaks = 36, freq = T)
+```
+
+We now compute the expected and the observed number of accidents in each bin based on our estimate of the rate being `round(rate, 2)`. The variable `ss$counts` contains the observed values in the bins, so we just need to compute the expected value.
+
+```{r}
+observed_accidents <- ss$counts
+expected_accidents <- rate * (640000000 - 630000000)/31557600
+test_stat <- sum((observed_accidents - expected_accidents)^2/expected_accidents)
+pchisq(test_stat, df = 35 - 1 - 1, lower.tail = F)
+```
+
+We fail to reject that airplane crashes are a homogeneous Poisson process. Let's continue now with **fatalities**. That is surely not a homogeneous Poisson process, because it violates the assumption that multiple occurrences cannot happen at the same time. Let's see what the distribution of fatalities looks like.
+
+```{r}
+hist(aa$fatalities)
+```
+
+It is really right skew. Maybe Poisson? No, for Poisson the mean is equal to the variance and check out our data!
+
+```{r}
+mean(aa$fatalities, na.rm = T)
+var(aa$fatalities, na.rm = T)
+```
+
+Many times when modeling a discrete rv with variance larger than the mean, we use **negative binomial** random variables. We choose the `size` and `mu` parameter to match the mean and variance of our data.
+
+```{r}
+hist(rnbinom(851, size = .33, mu = 21))
+```
 
 
 
