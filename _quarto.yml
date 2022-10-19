@@ -4,15 +4,6 @@ project:
   
 book:
   title: "Stochastic Processes with R"
-  author: "Darrin Speegle"
-  cover-image: images/random_walk.png
-  site-url: https://rstudio-education.github.io/hopr/
-  repo-url: https://github.com/speegled/stochastic/
-  repo-branch: master
-  repo-actions: [edit]
-  sharing: [twitter, facebook, linkedin]
-  messages: FALSE
-  warning: FALSE
   chapters:
     - index.qmd
     - compound_poisson.qmd

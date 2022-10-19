@@ -159,13 +159,6 @@ dd <- dd %>%
   mutate(date_time = lubridate::mdy_hm(paste0(date, time, sep = " ")))
 ```
 
-We also want to restrict to fatal airplane crashes for the purposes of this exercise, as this data set is probably missing quite a few crashes that were not fatal.
-
-```{r}
-dd <- dd %>% 
-  filter(fatalities > 0, aboard > 40)
-```
-
 OK, now let's get a histogram of the number of **accidents** over time.
 
 ```{r}
@@ -217,16 +210,14 @@ pchisq(test_stat, df = length(ss$counts) - 1 - 1, lower.tail = F)
 We fail to reject that airplane crashes are a homogeneous Poisson process. Let's continue now with **fatalities**. That is surely not a homogeneous Poisson process, because it violates the assumption that multiple occurrences cannot happen at the same time. Let's see what the distribution of fatalities looks like.
 
 ```{r}
-aa <- aa %>% 
-  mutate(survivors = aboard - fatalities)
-hist(aa$survivors)
+hist(aa$fatalities)
 ```
 
 It is really right skew. Maybe Poisson? No, for Poisson the mean is equal to the variance and check out our data!
 
 ```{r}
-muhat <- mean(aa$survivors, na.rm = T)
-varhat <- var(aa$survivors, na.rm = T)
+muhat <- mean(aa$fatalities, na.rm = T)
+varhat <- var(aa$fatalities, na.rm = T)
 muhat
 varhat
 ```
@@ -250,7 +241,7 @@ This cannot be correct! Negative binomial random variables usually can take on z
 
 :::
 
-This seems to be a reasonable model so far. $X(t)$ is a compound Poisson process with rate $\lambda = 77.36$ per year, and $Y_1, \ldots, Y_{N(t)}$ iid negative binomial random variables with size 0.47 and mean 31.6. We have already checked whether the occurrences are approximately a Poisson process, let's see how to check whether the total fatalities are approximately negative binomial with parameters estimated above. 
+This seems to be a reasonable model so far. $X(t)$ is a compound Poisson process with rate $\lambda = 77.36$ per year, and $Y_1, \ldots, Y_{N(t)}$ iid negative binomial random variables with size 0.323 and mean 21.54. We have already checked whether the occurrences are approximately a Poisson process, let's see how to check whether the total fatalities are approximately negative binomial with parameters estimated above. 
 
 We first set up our bins for the number of fatalities. We'll set them up so that we have about the same number of expected outcomes in each bin.
 
@@ -258,21 +249,11 @@ We first set up our bins for the number of fatalities. We'll set them up so that
 qnbinom(seq(0, 1, length.out = 20), size = sizehat, mu = muhat)
 ```
 
-**Ruh-Roh!!!** We forgot that we restricted to crashes that had a positive number of fatalities! The most likely outcome for a negative binomial random variable is 0! I don't need to check whehter this is correct, it is obviously incorrect. Let's just look at the  observed and expected for small values of fatalities.
+**Ruh-Roh!!!** Most of the crashes in this data set have a positive number of fatalities! The most likely outcome for a negative binomial random variable is 0! I don't need to check whehter this is correct, it is obviously incorrect. Let's just look at the  observed and expected for small values of fatalities.
 
 ```{r}
-table(aa$survivors)[1:10]
-round(dnbinom(0:11, size = sizehat, mu = muhat) * 335)
-
-probs <- c(dnbinom(0:30, size =sizehat, mu = muhat), 1 - sum(dnbinom(0:30, size = sizehat, mu = muhat)))
-expected <- 1375 * probs
-observed <- table(aa$survivors)
-observed <- c(observed[1:31], sum(observed[32:119]))
-observed
-expected
-teststat <- sum((expected - observed)^2/expected)
-pchisq(teststat, df = 32 - 1 - 2, lower.tail = F)
-(expected - observed)^2/expected
+table(aa$fatalities)[1:10]
+round(dnbinom(0:11, size = sizehat, mu = muhat) * 851)
 ```
 
 What we needed was a **zero-truncated** negative binomial random variable. This is similar to the zero-truncated Poisson above, and we just need to know how to estimate the parameters associated with it.  We see it has two parameters, size and prob, and the mean and variance are given in the help page. We need to find a combination of size and prob that leads to the observed mean and variance.
@@ -291,8 +272,8 @@ optim(par = list(r = .08, p= .012), fn = function(x) {
   (mu(r,p) - muhat)^2 + (vari(r,p) - varhat)^2
 })
 
-r <- .08016
-p <- .012118
+r <- .06718098
+p <- .01197641
 hist(actuar::rztnbinom(850, size = r, prob = p))
 ```
 
@@ -306,17 +287,10 @@ You could also make more bins by binning together 30-40, 41-50, 51-60, 61-70, 71
 probs <- c(actuar::dztnbinom(1:30, r, p), 1 - sum(actuar::dztnbinom(1:30, r, p)))
 expected <- 835 * probs
 observed <- table(aa$fatalities)
-observed <- c(observed[1:30], sum(observed[31:117]))
+observed <- c(observed[2:31], sum(observed[32:118]))
 teststat <- sum((expected - observed)^2/expected)
-pchisq(teststat, df = 31 - 1 - 3, lower.tail = F)
+pchisq(teststat, df = 30 - 1 - 2, lower.tail = F)
 ```
 
 We reject the null hypothesis that a zero-truncated negative binomial random variable is a good model for this data. Darn it!
-
-```{r}
-hist(aa$aboard)
-table(aa$aboard)
-plot(density(aa$fatalities/aa$aboard, na.rm = T))
-```
-
 
