@@ -5,7 +5,7 @@ project:
 book:
   title: "Stochastic Processes with R"
   author: "Darrin Speegle"
-  cover-image: images/cover.png
+  cover-image: images/random_walk.png
   site-url: https://rstudio-education.github.io/hopr/
   repo-url: https://github.com/speegled/stochastic/
   repo-branch: master
@@ -20,6 +20,6 @@ book:
 format:
   html: 
     theme: cosmo
-    cover-image: cover.png
+    cover-image: images/random_walk.png
     code-link: true
 
