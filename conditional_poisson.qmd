@@ -25,7 +25,7 @@ P(N(t) = 1) &= \int_0^2 \frac{(\lambda t)^1}{1!} \frac 12 \, d\lambda \\
 \end{align*}
 
 
-Note that this cannot be correct! When $t = 2$, this tells us $P(N(t) = 2) = 2$, which makes no sense. Where is the mistake?
+Note that this cannot be correct! When $t = 2$, this tells us $P(N(2) = 1) = 2$, which makes no sense. Where is the mistake?
 
 ::: callout-tryit
 Show that the correct answer is $P(N(t) = 1) = \frac{1 - e^{-2t}(2t + 1)}{2t}$
@@ -49,7 +49,7 @@ The first is $\int_0^\infty 7 e^{-2x}\, dx$. You have to find that the pdf of an
 \end{align*}
 
 
-The second is $\int_0^\infty x^n e^{-sx}\, dx$. You could think that this is related to $E[X^n]$ for an exponential random variable, and you would be right. But, that is not the easy way to do it. You have to know the pdf of a gamma random variable: $\frac {1}{\Gamma(r)} \beta^r {x^{r - 1}} {e^{-\beta x}}$, where $\Gamma$ is the gamma function, given in R via \texttt{gamma}. We have:
+The second is $\int_0^\infty x^n e^{-sx}\, dx$. You could think that this is related to $E[X^n]$ for an exponential random variable, and you would be right. But, that is not the easy way to do it. You have to know the pdf of a gamma random variable: $\frac {1}{\Gamma(r)} \beta^r {x^{r - 1}} {e^{-\beta x}}$, where $\Gamma$ is the gamma function, given in R via $\texttt{gamma}$. We have:
 
 
 \begin{align*}
@@ -64,24 +64,81 @@ Use the above trick to compute $\int_0^1 x^3(1 - x)^4\, dx$. Hint: look at the p
 :::
 
 
-### Example
+### Example {#sec-poissongeometric}
 
 We show that if $\Lambda$ has an exponential distribution with mean $1/r$ (rate = $r$), then the marginal distribution of $N(t)$ is **geometric**.
 
 
 \begin{align*}
 P(N(t) = n) &= \int_0^\infty \frac{(\lambda t)^n}{n!} e^{-\lambda t} r e^{-\lambda r} \, d\lambda \\
-&= \frac {t^n}{n!} \int_0^\infty \lambda^n e^{-\lambda(r + t)}  \, d\lambda\\
+&= \frac {t^n}{n!} \int_0^\infty \lambda^n e^{-\lambda(r + t)}  \, d\lambda
+\end{align*}
 
-After working through the previous section, you are hopefully ready to give this integral a go! 
+After working through the previous section, you are hopefully ready to give this integral a go! The answer is given below.
 
 ::: callout-tryit
-Show that $\frac {t^n}{n!} \int_0^\infty \lambda^n e^{-\lambda(r + t)}  \, d\lambda = \frac{t^n}{(r + t)^{n + 1}\lambda}$.
+Show that $\frac {t^n}{n!} r \int_0^\infty \lambda^n e^{-\lambda(r + t)}  \, d\lambda = \frac{r t^n}{(r + t)^{n + 1}}$.
+:::
+
+This says that the marginal probability of a conditional Poisson with exponential intensity distribution is 
+$$
+P(N(t) = n) = \frac{r}{r + t}\left(\frac{t}{r + t}\right)^n
+$$
+
+In other words, $P(N(t) = n)$ is a *geometric* random variable with probability of success $\frac{r}{r + t}$.
+
+## Theorems on Conditional Poisson Processes
+
+::: {#thm-meanvarianceconditionalprocess}
+
+## Mean and Variance of Conditional Poisson Process
+
+The mean and variance of a conditional compound process with random intensity function $\Lambda$ are given as
+
+$E[N(t)] = t E[\Lambda]$
+
+${\mathrm{Var}}(N(t)) = t E[\Lambda] + t^2 {\mathrm{Var}}(\Lambda)$
+:::
+
+::: callout-tryit
+Confirm the formulas for mean and variance of a conditional Poisson process in the special case that $\Lambda$ is an exponential random variable. (Hint: use the result in  @sec-poissongeometric!)
 :::
 
 
+## Simulations
+
+In order to simulate from a conditional Poisson process, we first simulate a random sample $\lambda$ from $\Lambda$, and then we simulate a Poisson rv with rate $\lambda$.
+
+Here we show how to simulate $N(3)$ when $\Lambda \sim$Unif(0, 1).
+
+```{r}
+sim_data <- replicate(10000, {
+  lambda <- runif(1, 0, 1)
+  rpois(1, 3 * lambda)
+})
+proportions(table(sim_data))
+```
+
+We see that the most likely outcome when $t = 3$ is that $N(3) = 0$. 
 
 
+:::callout-tryit
+Simulate $N(2)$ from a conditional Poisson process with random intensity $\Lambda \sim$Exp(1/3), and confirm that it appears to be a geometric distribution.
+:::
+
+```{r}
+#| echo: false
+#| eval: false
+
+sim_data <- replicate(10000, {
+  lambda <- rexp(1, 1/3)
+  rpois(1, 2 * lambda)
+})
+proportions(table(sim_data))
+dgeom(0:30, 1/3/(2 + 1/3))
+```
 
 
-
+:::callout-tryit
+Complete Exercise 7.3 in the textbook.
+:::
