@@ -249,7 +249,7 @@ We first set up our bins for the number of fatalities. We'll set them up so that
 qnbinom(seq(0, 1, length.out = 20), size = sizehat, mu = muhat)
 ```
 
-**Ruh-Roh!!!** Most of the crashes in this data set have a positive number of fatalities! The most likely outcome for a negative binomial random variable is 0! I don't need to check whehter this is correct, it is obviously incorrect. Let's just look at the  observed and expected for small values of fatalities.
+**Ruh-Roh!!!** Most of the crashes in this data set have a positive number of fatalities! The most likely outcome for a negative binomial random variable is 0! I don't need to check whehter this is correct, it is obviously incorrect. Let's just look at the observed and expected for small values of fatalities.
 
 ```{r}
 table(aa$fatalities)[1:10]
@@ -292,5 +292,5 @@ teststat <- sum((expected - observed)^2/expected)
 pchisq(teststat, df = 30 - 1 - 2, lower.tail = F)
 ```
 
-We reject the null hypothesis that a zero-truncated negative binomial random variable is a good model for this data. Darn it!
+We reject the null hypothesis that a zero-truncated negative binomial random variable is a good model for this data. Darn it! Modeling count data can be challenging! The problem with this data is that the number of people on board is so different for the different flight; it might be better to try to model the percentage of survivors or something like that.
 

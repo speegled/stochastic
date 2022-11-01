@@ -3,14 +3,15 @@ project:
   output-dir: docs
   
 book:
+  favicon: images/random_walk.png
   title: "Stochastic Processes with R"
   chapters:
     - index.qmd
     - compound_poisson.qmd
+    - conditional_poisson.qmd
 
 format:
   html: 
     theme: cosmo
     cover-image: images/random_walk.png
     code-link: true
-

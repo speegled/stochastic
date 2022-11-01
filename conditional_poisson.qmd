@@ -1,0 +1,87 @@
+# Conditional Poisson Process {#conditional-compound-process}
+
+A counting process $\{N(t)\}$ is a *conditional Poisson process* if $N(t)$ has a Poisson distribution with rate $\Lambda$, where $\Lambda$ is a **random variable**. We refer to the rate $\Lambda$ as a *random intensity rate*. 
+
+The *conditional* distribution of number of arrivals in the time interval between $s$ and $t + s$ is given by
+$$
+P\left(N(t + s) - N(s) = m\right|\Lambda = \lambda) = \mathrm{dpois}(m, \lambda t)
+$$
+In other words, the conditional distribution of $N(t + s) - N(s)$ given $\Lambda = \lambda$ is Poisson with rate $\lambda t$.
+
+Usually, we don't know $\Lambda = \lambda$. The *marginal* (unconditional) distribution of $N(T + s) - N(s)$ is given by
+$$
+P\left(N(t + s) - N(s) = m\right) = \int_0^\infty  \mathrm{dpois}(m, \lambda t) \, f_\Lambda(\lambda) \, d\lambda = \int_0^\infty \frac{(\lambda t)^m}{m!} e^{-\lambda t} f_\Lambda(\lambda)\, d\lambda
+$$
+where $f|_\Lambda$ is the density function associated with the random intensity $\Lambda$. 
+
+### Example 
+
+Suppose $\Lambda$ is uniform on the interval $[0, 2]$. **Find the mistake in the following argument**
+
+\begin{align*}
+P(N(t) = 1) &= \int_0^2 \frac{(\lambda t)^1}{1!} \frac 12 \, d\lambda \\
+&=\frac t2 \int_0^2 \lambda \, d\lambda\\
+&= \frac t2 \times 2 = t
+\end{align*}
+
+
+Note that this cannot be correct! When $t = 2$, this tells us $P(N(t) = 2) = 2$, which makes no sense. Where is the mistake?
+
+::: callout-tryit
+Show that the correct answer is $P(N(t) = 1) = \frac{1 - e^{-2t}(2t + 1)}{2t}$
+:::
+
+We plot this from $t = 0$ to $t = 10$ to see that the probability is increasing, starts at 0, peaks at some value of time for which exactly one arrival is most likely, and then goes back to zero (because as $t$ gets big, we expect to have more than 1 arrival in the time interval $[0, t]$.)
+
+```{r}
+curve( (1 - exp(-2*x)* (2*x + 1))/(2*x), from = 0.0001, to = 10)
+```
+
+### Example
+
+In this example, I show you how to compute two integrals using a **very** common trick in probability. The trick to doing **many** integrals of this type that come up in probability is to recognize them as *almost* the integral of a probability density function. More precisely, they are integrals of a probability density function times some constant. (Sometimes, they are integrals that represent the *mean* or *second moment*, but not today.) If we can figure out what the constant is, then we are good! Let's see how it works in practice.
+
+The first is $\int_0^\infty 7 e^{-2x}\, dx$. You have to find that the pdf of an exponential random variable is $\lambda e^{-\lambda x}$. We know that pdfs always integrate out to 1, so we do the following:
+
+\begin{align*}
+\int_0^\infty 7 e^{-2x}\, dx &= \frac 72 \int_0^\infty 2 e^{-2x}\, dx\\
+&= \frac 72
+\end{align*}
+
+
+The second is $\int_0^\infty x^n e^{-sx}\, dx$. You could think that this is related to $E[X^n]$ for an exponential random variable, and you would be right. But, that is not the easy way to do it. You have to know the pdf of a gamma random variable: $\frac {1}{\Gamma(r)} \beta^r {x^{r - 1}} {e^{-\beta x}}$, where $\Gamma$ is the gamma function, given in R via \texttt{gamma}. We have:
+
+
+\begin{align*}
+\int_0^\infty  x^n e^{-sx}\, dx &= \frac{\Gamma(n + 1)}{s^{n + 1}} \int_0^\infty \frac{1}{\Gamma(n + 1)} s^{n + 1} x^{(n + 1) - 1} e^{-sx}\, dx   \\
+&= \frac{\Gamma(n + 1)}{s^{n + 1}}
+\end{align*}
+
+If $n$ is an integer, $\Gamma(n + 1) = n!$.
+
+::: callout-tryit
+Use the above trick to compute $\int_0^1 x^3(1 - x)^4\, dx$. Hint: look at the pdf of a beta distribution. Compare your answer (it should be a number) to what Wolfram alpha gives.
+:::
+
+
+### Example
+
+We show that if $\Lambda$ has an exponential distribution with mean $1/r$ (rate = $r$), then the marginal distribution of $N(t)$ is **geometric**.
+
+
+\begin{align*}
+P(N(t) = n) &= \int_0^\infty \frac{(\lambda t)^n}{n!} e^{-\lambda t} r e^{-\lambda r} \, d\lambda \\
+&= \frac {t^n}{n!} \int_0^\infty \lambda^n e^{-\lambda(r + t)}  \, d\lambda\\
+
+After working through the previous section, you are hopefully ready to give this integral a go! 
+
+::: callout-tryit
+Show that $\frac {t^n}{n!} \int_0^\infty \lambda^n e^{-\lambda(r + t)}  \, d\lambda = \frac{t^n}{(r + t)^{n + 1}\lambda}$.
+:::
+
+
+
+
+
+
+
