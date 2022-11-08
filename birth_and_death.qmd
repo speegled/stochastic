@@ -34,6 +34,7 @@ In both cases, $X(t)$ the number of occurrences at or before time $t$ is a conti
 
 Now, here is how a birth and death process works. If we are given that $X(t) = n$, the time to transition to state $n + 1$ is exponentially distributed with rate $\lambda_n$, and the time to transition to state $n - 1$ is exponentially distributed with rate $\mu_n$. The process will transition to the state that has the shorter waiting time, and then reset. Therefore, the time until any kind of transition is **the minimum** of two exponential random variables. What kind of random variable is that?
 
+
 ```{r}
 simdata <- replicate(10000, {
   min(rexp(1, 2), rexp(1, 4))
@@ -54,7 +55,20 @@ From the above computations, we are convinced that the time to a transition is *
 Suppose $T_B$ is exponential with rate 2 and $T_D$ is exponential with rate 1. Estimate $P(T_B < T_D)$ using simulations.
 :::
 
+::: {#thm-probability-transition}
+If $T_B$ is an exponential random variable with rate $\lambda_n$ and $T_D$ is an exponential random variable with rate $\mu_n$, then $P(T_D < T_B) = \frac{\mu_n}{\lambda_n + \mu_n}$.
+:::
 
+In summary, the transition matrix for a birth and death process looks like this:
 
+$$
+\begin{pmatrix}
+0&1&0&0&0&\cdots\\
+\frac{\mu_1}{\lambda_1 + \mu_1}&0&\frac{\lambda_1}{\lambda_1 + \mu_1}&0&0&\cdots\\
+0&\frac{\mu_2}{\lambda_2 + \mu_2}&0&\frac{\lambda_2}{\lambda_2 + \mu_2}&0&\cdots\\
+0&0&\frac{\mu_3}{\lambda_3 + \mu_3}&0&\frac{\lambda_3}{\lambda_3 + \mu_3}&\cdots\\
+\vdots&\vdots&\vdots&\vdots&\vdots
+\end{pmatrix}
+$$
 
 [^1]: Well, it is posible that the process will still be in the same state after $t_1$ if there are loops; that is, if it is possible for the associated Markov chain to tranistion from a state $i$ back to state $i$. That isn't the case for birth-and-death processes.
