@@ -1,0 +1,60 @@
+# Birth-and-Death Process {#birth-and-death}
+
+A continuous-time Markov chain is a continuous stochastic process in which, for each state, the process will change state according to an exponential random variable and then move to a different state as specified by the probabilities of a stochastic matrix. [Wikipedia](https://en.wikipedia.org/wiki/Continuous-time_Markov_chain) Let's spend some time thinking about this in more detail.
+
+Let $X(t)$ denote the state that the Markov chain is in at time $t$ for $t\ge 0$. $X(0)$ is the initial state of the process. The process will[^1] change states for the first time $t_1$ according to an exponential distribution with some rate $r$. So, $X(t) = X(0)$ for $0\le t \le t_1$, and then $X(t)$ will be different for $t > t_1$. How does it change? According to a transition matrix, just like a regular old Markov chain.
+
+For a homogenous Poisson process, we have the following transition matrix:
+
+$$
+\begin{pmatrix}
+0&1&0&0&0&\cdots\\
+0&0&1&0&0&\cdots\\
+0&0&0&1&0&\cdots\\
+0&0&0&0&1&\cdots\\
+\vdots&\vdots&\vdots&\vdots&\vdots
+\end{pmatrix}
+$$
+
+This means that every time there is a transition, $X(t)$ increases by exactly 1.
+
+For a compound Poisson process with $X(t) = \sum_{i = 1}^N(t) Y_i$ where $Y_i$ is 1 with probability $p$ and 2 with probability $1 - p$, we would have the following transition matrix:
+
+$$
+\begin{pmatrix}
+0&p&1 - p&0&0&\cdots\\
+0&0&p&1-p&0&\cdots\\
+0&0&0&p&1-p&\cdots\\
+0&0&0&0&p&\cdots\\
+\vdots&\vdots&\vdots&\vdots&\vdots
+\end{pmatrix}
+$$
+
+In both cases, $X(t)$ the number of occurrences at or before time $t$ is a continuous time Markov chain with the associated transition matrix.
+
+Now, here is how a birth and death process works. If we are given that $X(t) = n$, the time to transition to state $n + 1$ is exponentially distributed with rate $\lambda_n$, and the time to transition to state $n - 1$ is exponentially distributed with rate $\mu_n$. The process will transition to the state that has the shorter waiting time, and then reset. Therefore, the time until any kind of transition is **the minimum** of two exponential random variables. What kind of random variable is that?
+
+```{r}
+simdata <- replicate(10000, {
+  min(rexp(1, 2), rexp(1, 4))
+})
+hist(simdata, probability = T)
+curve(dexp(x, 6), add = T, col = 2)
+```
+
+The above plot shows that the minimum of an independent exponentials with rates 2 and 4 is an exponential random variable with rate 6. 
+
+:::callout-tryit
+Let $X$ and $Y$ be independent exponential random variables with rates 1 and 5. Use simulation to determine what kind of random variable the minimum of $X$ and $Y$ is.
+:::
+
+From the above computations, we are convinced that the time to a transition is *exponentially distributed* with rate $\lambda_n + \mu_n$. Therefore, the first criterion for a birth-and-death process is satisfied. Next, we need to see what the transition probabilities are. Let $T_B$ be the waiting time until the upward transition, and let $T_D$ be the waiting time until the downward transition. Think of the upward transition as representing the birth of a new object, and the downard time as the death of an object.
+
+:::callout-tryit
+Suppose $T_B$ is exponential with rate 2 and $T_D$ is exponential with rate 1. Estimate $P(T_B < T_D)$ using simulations.
+:::
+
+
+
+
+[^1]: Well, it is posible that the process will still be in the same state after $t_1$ if there are loops; that is, if it is possible for the associated Markov chain to tranistion from a state $i$ back to state $i$. That isn't the case for birth-and-death processes.

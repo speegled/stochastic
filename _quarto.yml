@@ -9,6 +9,7 @@ book:
     - index.qmd
     - compound_poisson.qmd
     - conditional_poisson.qmd
+    - birth_and_death.qmd
 
 format:
   html: 
