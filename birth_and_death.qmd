@@ -46,13 +46,13 @@ curve(dexp(x, 6), add = T, col = 2)
 The above plot shows that the minimum of an independent exponentials with rates 2 and 4 is an exponential random variable with rate 6. 
 
 :::callout-tryit
-Let $X$ and $Y$ be independent exponential random variables with rates 1 and 5. Use simulation to determine what kind of random variable the minimum of $X$ and $Y$ is.
+Let $X$ and $Y$ be independent exponential random variables with rates 1 and 3. Use simulation to determine what kind of random variable the minimum of $X$ and $Y$ is.
 :::
 
 From the above computations, we are convinced that the time to a transition is *exponentially distributed* with rate $\lambda_n + \mu_n$. Therefore, the first criterion for a birth-and-death process is satisfied. Next, we need to see what the transition probabilities are. Let $T_B$ be the waiting time until the upward transition, and let $T_D$ be the waiting time until the downward transition. Think of the upward transition as representing the birth of a new object, and the downard time as the death of an object.
 
 :::callout-tryit
-Suppose $T_B$ is exponential with rate 2 and $T_D$ is exponential with rate 1. Estimate $P(T_B < T_D)$ using simulations.
+Suppose $T_B$ is exponential with rate 2 and $T_D$ is exponential with rate 1. Estimate $P(T_D < T_B)$ using simulations.
 :::
 
 ::: {#thm-probability-transition}
@@ -70,5 +70,21 @@ $$
 \vdots&\vdots&\vdots&\vdots&\vdots
 \end{pmatrix}
 $$
+
+::: {#exm-mm1-queue}
+If customers arrive in a queue according to a Poisson process with rate $\lambda$, and customers are served and exit from the queue according to a Poisson process with rate $\mu$, then $X(t)$ the number of people in the queue at time $t$ is a birth-and-death process with transition times exponentially distributed with rate $\lambda + \mu$, and transition matrix
+
+$$
+\begin{pmatrix}
+0&1&0&0&0&\cdots\\
+\frac{\mu}{\lambda + \mu}&0&\frac{\lambda}{\lambda + \mu}&0&0&\cdots\\
+0&\frac{\mu}{\lambda + \mu}&0&\frac{\lambda}{\lambda + \mu}&0&\cdots\\
+0&0&\frac{\mu}{\lambda + \mu}&0&\frac{\lambda}{\lambda + \mu}&\cdots\\
+\vdots&\vdots&\vdots&\vdots&\vdots
+\end{pmatrix}
+$$
+
+Suppose that the rate at which people arrive is 30 per hour, and the rate at which they are served is 30 per hour. What is the expected value of the maximum number of people in the queue over the course of an 8 hour day? What is the expected wait time of a customer before being served? We will need to do some simulations to do this, so we delay, but these are the types of questions we are interested in answering.
+:::
 
 [^1]: Well, it is posible that the process will still be in the same state after $t_1$ if there are loops; that is, if it is possible for the associated Markov chain to tranistion from a state $i$ back to state $i$. That isn't the case for birth-and-death processes.
