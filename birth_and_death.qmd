@@ -94,24 +94,26 @@ In this section, we show how to simulate from a birth-and-death process, and we 
 We first show how to simulate birth-and-death processes when the birth rate and death rate are **constant**, except that the death rate is 0 when $X(t) = 0$. We assume that the birth rate is 2 and the death rate is 1.5. We simulate for 5 units of time. I try to avoid doing things using loops, but I really think in this case, loops are the easiest way to proceed.
 
 ```{r}
-current_time <- rexp(1, 2)
-change_times <- c(0, current_time)
-current_state <- 1
-states <- c(0, current_state)
+current_time <- 0 
+change_times <- numeric(0) #vector of all places births/deaths occur
+current_state <- 0
+states <- current_state #vector of all states
 while(current_time < 5) {
-  if(current_state == 0) {
+  #get time of next change and new state
+  if(current_state == 0) { 
     current_time <- current_time + rexp(1, 2)
     current_state <- 1
-  } else {
+  } else { 
     current_time <- current_time + rexp(1, 3.5)
     current_state <- current_state + sample(c(-1, 1), size = 1, prob = c(1.5, 2))
   }
-  if(current_time < 5) {
+  #update change times and states
+  if(current_time < 5) { 
     change_times <- c(change_times, current_time)
     states <- c(states, current_state)
   }
 }
-plot(stepfun(x = change_times[-1], y = states))
+plot(stepfun(x = change_times, y = states), xlim = c(0, 5))
 ```
 
 :::callout-tryit
@@ -124,24 +126,24 @@ OK, now we will simulate a process where customers are arriving at a rate of 30 
 birth_rate <- 30
 death_rate <- 30
 max_time <- 1
-current_time <- rexp(1, birth_rate)
-change_times <- c(0, current_time)
-current_state <- 1
-states <- c(0, current_state)
+current_time <- 0 
+change_times <- numeric(0) 
+current_state <- 0
+states <- current_state
 while(current_time < max_time) {
-  if(current_state == 0) {
+  if(current_state == 0) { 
     current_time <- current_time + rexp(1, birth_rate)
     current_state <- 1
-  } else {
-    current_time <- current_time + rexp(1, birth_rate + death_rate)
+  } else { 
+    current_time <- current_time + rexp(1, death_rate + birth_rate)
     current_state <- current_state + sample(c(-1, 1), size = 1, prob = c(death_rate, birth_rate))
   }
-  if(current_time < max_time) {
+  if(current_time < max_time) { 
     change_times <- c(change_times, current_time)
     states <- c(states, current_state)
   }
 }
-plot(stepfun(x = change_times[-1], y = states))
+plot(stepfun(x = change_times, y = states), xlim = c(0, max_time))
 ```
 
 We are now ready to answer the question asked at the start of the section. What is the expected number of customers waiting in line when the bank closes?
@@ -152,20 +154,20 @@ birth_rate <- 30
 death_rate <- 30
 max_time <- 8
 sim_data <- replicate(1000, {
-  current_time <- rexp(1, birth_rate)
-  change_times <- c(0, current_time)
-  current_state <- 1
-  states <- c(0, current_state)
+  current_time <- 0 
+  change_times <- numeric(0) 
+  current_state <- 0
+  states <- current_state
   while(current_time < max_time) {
-    if(current_state == 0) {
+    if(current_state == 0) { 
       current_time <- current_time + rexp(1, birth_rate)
       current_state <- 1
-    } else {
-      current_time <- current_time + rexp(1, birth_rate + death_rate)
+    } else { 
+      current_time <- current_time + rexp(1, death_rate + birth_rate)
       current_state <- current_state + sample(c(-1, 1), size = 1, prob = c(death_rate, birth_rate))
     }
-    if(current_time < max_time) {
-      change_times <- c(change_times, current_time) #this is inefficient in R - preallocating is better when possible
+    if(current_time < max_time) { 
+      change_times <- c(change_times, current_time)
       states <- c(states, current_state)
     }
   }
