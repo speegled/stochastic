@@ -149,11 +149,206 @@ plot(stepfun(x = change_times, y = states), xlim = c(0, max_time))
 We are now ready to answer the question asked at the start of the section. What is the expected number of customers waiting in line when the bank closes?
 
 ```{r}
+library(future)
 set.seed(1) #to get consistent results when re-compiling
 birth_rate <- 30
 death_rate <- 30
 max_time <- 8
-sim_data <- replicate(1000, {
+plan(multisession, workers = 8)
+sim_data <- future.apply::future_replicate(1000, {
+  current_time <- 0 
+  change_times <- numeric(0) 
+  current_state <- 0
+  states <- current_state
+  while(current_time < max_time) {
+    if(current_state == 0) { 
+      current_time <- current_time + rexp(1, birth_rate)
+    } else { 
+      current_time <- current_time + rexp(1, death_rate + birth_rate)
+    }
+    if(current_time < max_time) { 
+      if(current_state == 0) {
+        current_state <- 1
+      } else {
+        current_state <- current_state + sample(c(-1, 1), size = 1, prob = c(death_rate, birth_rate))
+      }
+      change_times <- c(change_times, current_time)
+      states <- c(states, current_state)
+    }
+  }
+  current_state
+})
+```
+
+```{r}
+mean(sim_data)
+```
+
+We expect there to be about 17 people in line when the bank closes. 
+
+```{r}
+quantile(sim_data, c(.025, .975))
+```
+
+With probability 95 percent, there will be between 0 and 48 people in line when the bank closes. This illustrates a fact that is counter-intuitive for some people. If you want to avoid a long line forming at your business, you have to be able to process people **faster** than they arrive. Processing them at the same rate as they arrive is not enough.
+
+:::callout-tryit
+- Estimate the probability that the line is empty when the bank closes.
+- Estimate the expected value of the longest line observed throughout the day.
+- **Harder** Estimate the expected *wait time* of a customer arriving right before closing.
+:::
+
+## More simulations
+
+Another possible quantity of interest is the mean weight time of customers in a queue. We may or may not want to include the time that the customer spends being served in our estimate, but for this example we **will** include the time that the customer spends being served. So, for each customer, we need to keep track of when they arrive (birth-time), and when they are served (death-time). We will modify our code from the previous section to accomplish this. We assume births last until `max_time`, and then the queue is cleared out without any more births.
+
+```{r}
+#| message: false
+#| warning: false
+library(dplyr) #for bind_rows
+birth_rate <- 30
+death_rate <- 30
+max_time <- 8
+
+current_customer <- 0
+current_time <- 0 
+change_times <- numeric(0) #vector of all places births/deaths occur
+current_state <- 0
+states <- current_state #vector of all states
+queue <- data.frame(
+  customer = numeric(0),
+  birth_time = numeric(0),
+  death_time = numeric(0)
+)
+while(current_time < max_time) {
+  #get time of next change and new state
+  if(current_state == 0) { 
+    current_time <- current_time + rexp(1, birth_rate)
+    if(current_time > max_time) break
+    current_state <- 1
+    current_customer <- current_customer + 1
+    if(current_time > max_time) break
+    queue <- bind_rows(
+        queue,
+        data.frame(customer = current_customer,
+                   birth_time = current_time,
+                   death_time = NA)
+      )
+  } else { 
+    current_time <- current_time + rexp(1, birth_rate + death_rate)
+    birth_or_death <- sample(c(-1, 1), size = 1, prob = c(death_rate, birth_rate))
+    current_state <- current_state + birth_or_death
+    if(birth_or_death == 1) {
+      current_customer <- current_customer + 1
+      queue <- bind_rows(
+        queue,
+        data.frame(customer = current_customer,
+                   birth_time = current_time,
+                   death_time = NA)
+      )
+    } else {
+      customer_served <- min(which(is.na(queue$death_time)))
+      queue[customer_served, "death_time"] <- current_time
+    }
+
+  }
+}
+if(any(is.na(queue$death_time))) {
+  for(i in which(is.na(queue$death_time))) {
+    queue$death_time[i] <- current_time + rexp(1, death_rate)
+    current_time <- queue$death_time[i]
+  }
+}
+head(queue)
+```
+
+:::callout-tryit
+- Find the expected mean wait time over the course of an 8 hour day. (Hint: you may wish to use `future.apply::future_replicate` to run this simulation in parallel.)
+- Find the expected maximum wait time over the course of an 8 hour day.
+- Suppose the teller's speed is reduced by 5 percent. About what percentage does the expected maximum wait time change?
+- What would the rate of the teller have to be for the expected maximum wait time to be less than 15 minutes?
+:::
+
+
+```{r, echo=FALSE, eval=FALSE}
+birth_rate <- 30 
+death_rate <- 30
+max_time <- 8
+system.time(sim_data <- replicate(1000, {
+  current_customer <- 0
+  current_time <- 0 
+  change_times <- numeric(0) #vector of all places births/deaths occur
+  current_state <- 0
+  states <- current_state #vector of all states
+  queue <- data.frame(
+    customer = numeric(0),
+    birth_time = numeric(0),
+    death_time = numeric(0)
+  )
+  while(current_time < max_time) {
+    #get time of next change and new state
+    if(current_state == 0) { 
+      current_time <- current_time + rexp(1, birth_rate)
+      current_state <- 1
+      current_customer <- current_customer + 1
+      if(current_time > max_time) break
+      queue <- bind_rows(
+        queue,
+        data.frame(customer = current_customer,
+                   birth_time = current_time,
+                   death_time = NA)
+      )
+    } else { 
+      current_time <- current_time + rexp(1, birth_rate + death_rate)
+      birth_or_death <- sample(c(-1, 1), size = 1, prob = c(death_rate, birth_rate))
+      current_state <- current_state + birth_or_death
+      if(birth_or_death == 1) {
+        if(current_time > max_time) break
+        current_customer <- current_customer + 1
+        queue <- bind_rows(
+          queue,
+          data.frame(customer = current_customer,
+                     birth_time = current_time,
+                     death_time = NA)
+        )
+      } else {
+        customer_served <- min(which(is.na(queue$death_time)))
+        queue[customer_served, "death_time"] <- current_time
+      }
+      
+    }
+  }
+  if(any(is.na(queue$death_time))) {
+    for(i in which(is.na(queue$death_time))) {
+      queue$death_time[i] <- current_time + rexp(1, death_rate)
+      current_time <- queue$death_time[i]
+    }
+  }
+  max(queue$death_time - queue$birth_time)
+}))
+hist(sim_data)
+mean(sim_data)
+plan(sequential)
+
+```
+
+
+## Stationary distribution
+
+Simple birth-and-death processes with a constant rate of births and deaths are called an M/M/1 queue. It can be challenging to answer questions about the queue when $t$ is small, but the limiting behavior is much easier to understand. Let $P_n(t) = P(X(t) = n)$ be the probability that the birth-and-death process is in state $n$ at time $t$. We define $P_n = \lim_{t\to \infty} P_n(t)$. If the birth-rate $\lambda$ is larger than the death rate $\mu$, then this doesn't make sense, because $X(t) \to \infty$ and will never equal $n$ past some point. This quantity only makes sense when $\lambda < \mu$, in which case it is given as follows:
+
+$$
+P_n = \left(1 - \lambda/\mu\right) \left(\lambda/\mu\right)^n
+$$
+
+This says that the "long run distribution" of state $i$ is geometric with probability of success $(1 - \lambda/\mu)$. Let's verify this via simulation. We take $\lambda = 1$ and $\mu = 3$, and `max_time = 100`. We find the state that the process is in at time 40, and replicate. That should be approximately the long run distribution of $P_n$.
+
+```{r}
+set.seed(1) #to get consistent results when re-compiling
+birth_rate <- 1
+death_rate <- 3
+max_time <- 40
+sim_data <- future.apply::future_replicate(10000, {
   current_time <- 0 
   change_times <- numeric(0) 
   current_state <- 0
@@ -171,28 +366,114 @@ sim_data <- replicate(1000, {
       states <- c(states, current_state)
     }
   }
-  tail(states, 1)
+  states[length(states)] 
+  #' 
+  #' Note: it is **wrong** to use current_state here the way we have coded it! 
+  #' 
 })
+barplot(table(sim_data))
+data.frame(observed = proportions(table(sim_data)),
+           theory = dgeom(sort(unique(sim_data)), prob = 2/3)) #pretty close match
 ```
-
-```{r}
-mean(sim_data)
-```
-
-We expect there to be about 17 people in line when the bank closes. 
-
-```{r}
-quantile(sim_data, c(.025, .975))
-```
-
-With probability 95 percent, there will be between 0 and 52 people in line when the bank closes. This illustrates a fact that is counter-intuitive for some people. If you want to avoid a long line forming at your business, you have to be able to process people **faster** than they arrive. Processing them at the same rate as they arrive is not enough.
 
 :::callout-tryit
-- Estimate the probability that the line is empty when the bank closes.
-- Estimate the expected value of the longest line observed throughout the day.
-- **Harder** Estimate the expected *wait time* of a customer arriving right before closing.
+- Find the long-run probability that there are 4 people in the queue when $\lambda = 1$ and $\mu = 1.5$. Verify via simulation.
+- The long-run expected number of people in the queue is $\frac{1}{\mu - \lambda}$. Verify this via simulation for $\lambda = 1$ and $\mu = 2$. (Note what this says when $\mu$ is just barely larger than $\lambda$, though!)
+- **Grad Students** If a new person enters the queue after it has been running a long-time, the distribution of that person's wait times until being served is exponential with rate $\mu - \lambda$. Verify this via simulation when $\lambda = 2$ and $\mu = 3$. **Note** it is easy to mess this up. One way to do it correctly is to find the time of the last arrival before `max_time`, compute the length of time that arrival has to wait to be served, and replicate.
 :::
 
+
+
+```{r eval=F, echo=F}
+#We also could have done this by simulating the queue like we did above with a **single** long simulation and estimating the percentage of **time** that the birth-and-death process is in each state. Let's see how to do it like that.
+birth_rate <- 1
+death_rate <- 3
+max_time <- 10000
+
+current_customer <- 0
+current_time <- 0 
+change_times <- numeric(0) #vector of all places births/deaths occur
+current_state <- 0
+states <- current_state #vector of all states
+queue <- data.frame(
+  customer = numeric(0),
+  birth_time = numeric(0),
+  death_time = numeric(0)
+)
+while(current_time < max_time) {
+  #get time of next change and new state
+  if(current_state == 0) { 
+    current_time <- current_time + rexp(1, birth_rate)
+    current_state <- 1
+    current_customer <- current_customer + 1
+    if(current_time > max_time) break
+    queue <- bind_rows(
+        queue,
+        data.frame(customer = current_customer,
+                   birth_time = current_time,
+                   death_time = NA)
+      )
+  } else { 
+    current_time <- current_time + rexp(1, birth_rate + death_rate)
+    birth_or_death <- sample(c(-1, 1), size = 1, prob = c(death_rate, birth_rate))
+    current_state <- current_state + birth_or_death
+    if(birth_or_death == 1) {
+      if(current_time > max_time) break
+      current_customer <- current_customer + 1
+      queue <- bind_rows(
+        queue,
+        data.frame(customer = current_customer,
+                   birth_time = current_time,
+                   death_time = NA)
+      )
+    } else {
+      customer_served <- min(which(is.na(queue$death_time)))
+      queue[customer_served, "death_time"] <- current_time
+    }
+
+  }
+}
+if(any(is.na(queue$death_time))) {
+  for(i in which(is.na(queue$death_time))) {
+    queue$death_time[i] <- current_time + rexp(1, death_rate)
+    current_time <- queue$death_time[i]
+  }
+}
+head(queue)
+```
+
+
+```{r eval=F, echo=F}
+#For each birth and death time listed in the queue, we find the number of customers in the queue.
+
+xt <- data.frame(length = 0, time = 0, change = 0)
+for(tt in queue$birth_time) {
+  xt <- bind_rows(xt,
+            data.frame(length = NA, time = tt, change = 1))
+}
+for(tt in queue$death_time) {
+  xt <- bind_rows(xt,
+            data.frame(length = NA, time = tt, change = -1))
+}
+xt <- xt %>% 
+  arrange(time) %>% 
+  mutate(length = cumsum(change)) %>% 
+  filter(time > 10)
+dd <- data.frame(state = xt$length[1:(nrow(xt) - 1)],
+                 time = diff(xt$time))
+dd %>% 
+  group_by(state) %>% 
+  summarize(time = sum(time)) %>% 
+  mutate(time = time/sum(time)) %>% 
+  mutate(exp = dgeom(0:8, 2/3))
+```
+
+
+
+
+```{r}
+plan(sequential)
+```
 
 
 
