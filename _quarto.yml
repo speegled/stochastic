@@ -10,6 +10,7 @@ book:
     - compound_poisson.qmd
     - conditional_poisson.qmd
     - birth_and_death.qmd
+    - branching_process.qmd
 
 format:
   html: 

@@ -146,7 +146,7 @@ while(current_time < max_time) {
 plot(stepfun(x = change_times, y = states), xlim = c(0, max_time))
 ```
 
-We are now ready to answer the question asked at the start of the section. What is the expected number of customers waiting in line when the bank closes?
+We are now ready to answer the question asked at the start of the section. What is the expected number of customers waiting in line when the bank closes? We modify the code so that `current_state` never becomes the value of the state at the first change after `max_time` by adding an `if` statement that only updates `states` if it is a legitimate update.
 
 ```{r}
 library(future)
@@ -224,10 +224,9 @@ while(current_time < max_time) {
   #get time of next change and new state
   if(current_state == 0) { 
     current_time <- current_time + rexp(1, birth_rate)
-    if(current_time > max_time) break
+    if(current_time > max_time) break #no more updates after max_time
     current_state <- 1
     current_customer <- current_customer + 1
-    if(current_time > max_time) break
     queue <- bind_rows(
         queue,
         data.frame(customer = current_customer,
@@ -236,6 +235,7 @@ while(current_time < max_time) {
       )
   } else { 
     current_time <- current_time + rexp(1, birth_rate + death_rate)
+    if(current_time > max_time) break #no more updates after max_time
     birth_or_death <- sample(c(-1, 1), size = 1, prob = c(death_rate, birth_rate))
     current_state <- current_state + birth_or_death
     if(birth_or_death == 1) {
@@ -253,6 +253,7 @@ while(current_time < max_time) {
 
   }
 }
+#now we find all of the death times for the people still in the queue at max_time
 if(any(is.na(queue$death_time))) {
   for(i in which(is.na(queue$death_time))) {
     queue$death_time[i] <- current_time + rexp(1, death_rate)
@@ -271,6 +272,7 @@ head(queue)
 
 
 ```{r, echo=FALSE, eval=FALSE}
+#don't look at this on github, that would be cheating! I mean you, Troy.
 birth_rate <- 30 
 death_rate <- 30
 max_time <- 8
@@ -378,8 +380,8 @@ data.frame(observed = proportions(table(sim_data)),
 
 :::callout-tryit
 - Find the long-run probability that there are 4 people in the queue when $\lambda = 1$ and $\mu = 1.5$. Verify via simulation.
-- The long-run expected number of people in the queue is $\frac{1}{\mu - \lambda}$. Verify this via simulation for $\lambda = 1$ and $\mu = 2$. (Note what this says when $\mu$ is just barely larger than $\lambda$, though!)
-- **Grad Students** If a new person enters the queue after it has been running a long-time, the distribution of that person's wait times until being served is exponential with rate $\mu - \lambda$. Verify this via simulation when $\lambda = 2$ and $\mu = 3$. **Note** it is easy to mess this up. One way to do it correctly is to find the time of the last arrival before `max_time`, compute the length of time that arrival has to wait to be served, and replicate.
+- The long-run expected number of people in the queue is $\frac{\lambda}{\mu - \lambda}$. Verify this via simulation for $\lambda = 1$ and $\mu = 2$. (Note what this says when $\mu$ is just barely larger than $\lambda$, though!)
+- **Grad Students** If a new person enters the queue after it has been running a long-time, the distribution of that person's wait times until being served is exponential with rate $\mu - \lambda$. Verify this via simulation when $\lambda = 2$ and $\mu = 3$. **Note** it is easy to mess this up. One way to do it correctly is to find the time of the last arrival before `max_time`, compute the length of time that arrival has to wait to be served, and replicate. (This is the sum of the time waiting in the queue (if any) and the time being served.) You should verify that is an exponential distribution with rate $\mu - \lambda$.
 :::
 
 

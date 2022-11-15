@@ -1,0 +1,84 @@
+# Branching Process
+
+A discrete-time stochastic process $\{X_n:n \ge 0\}$ that gives the size of the $n$th generation of multiplying particles is called a *branching process*.[^book] We start with $X_0$ particles in the 0th generation. After one unit of time, each particle in the 0th generation creates offspring via some probability distribution, and the original particle ceases to exist. We assume that the method that the distribution of offspring for each particle is the same and that they are independent. A way to write this mathematically is
+
+$$
+X_n = \sum_{i = 1}^{X_{n- 1}} Z_i
+$$
+where $Z_i$ is a random varaible with distribution the offspring of a single particle. 
+
+
+
+::: {#exm-branching} 
+Examples of branching processes.
+
+- Population dynamics. Suppose that we wish to understand the population of some species in a geographic area over time. For example, we could be trying to understand how the population of an endangered species evolves over time.[^independent] Of particular interest here would be the proability that the number of particles ever reaches 0.
+
+- In epidemiology, a basic model of the spread of infectious disease is that of a branching process. One might model the number of people infected by each particle as Poisson with some rate. Again, there are some problems with this model, as over time, one would expect immunity to build in the community, so the rate of the Poisson process would presumably **decrease** over time, which is not in line with our model. However, this could be used to model the initial stages of a disease before much immunity has been conferred.
+:::
+
+[^independent]: it seems unwise to assume that the number of offspring per particle is independent in this case. If there is an environmental or other catastrophe, it seems likely that the number of offspring of all particles would be impacted. But this model could be useful in "normal times."
+
+[^book]: this is the definition from our book.
+
+## Simulations
+
+Let's see how to simulate a branching process. We assume that the number of offspring of each particle is binomial with $n = 2$ and $p = .5$, so that the expected number of offspring is 1. We also assume that we start with 1 particle.
+
+```{r}
+max_time <- 10 
+x <- numeric(max_time + 1)
+x[1] <- 1
+for(i in 2:(max_time + 1)) {
+  x[i] <- sum(rbinom(x[i - 1], 2, .5))
+}
+x
+```
+
+::: {#thm-meanvarbranch}
+Let $X_n$ be a branching process with a single initial ancestor.
+
+- Let $\mu = E[Z]$. The mean size of the $n$th generation is $E[X_n] = \mu^n$.
+- Var$(X_0) = 0$, Var$(X_1) = \sigma^2$, and for $n\ge 2$
+$$
+{\mathrm{Var}} = \begin{cases} 
+\sigma^2 \mu^{n - 1}\left(\frac{1 - \mu^n}{1 - \mu}\right), &\mu \not- 1\\
+\sigma^2 n&\mu = 1
+\end{cases}
+$$
+where $\sigma^2$ is the variance of the offsrping process.
+:::
+
+::: callout-tryit
+- Verify via simulation that the mean of $X_{10}$ in the process described at the start of this section is $1$.
+- Verify via simulation that the variance of $X_{10}$ in the process is 5. Note that $X_{10}$ is `x[11]` in our simulation.
+:::
+
+```{r eval = F, echo = F}
+var(replicate(100000, {
+  x <- numeric(max_time)
+  x[1] <- 1
+  for(i in 2:(max_time + 1)) {
+    x[i] <- sum(rbinom(x[i - 1], 2, .5))
+  }
+  x[max_time + 1]
+}))
+```
+
+The *probability of extinction* is defined as $\pi_0 = \lim_{n \to \infty} P(X_n = 0|X_0 = 1)$. 
+
+::: {#thm-extinctionbranch}
+Extinction probabilities
+
+- If $\mu < 1$ then $\pi_0 = 1$.
+- If $\mu = 1$, then $\pi_0 = 1$ **unless** $Z_i = 1$, and there is no randomness to the process.
+- If $\mu > 1$, then it is an interesting problem to find $\pi_0$. It turns out that $\pi_0$ is the smallest positive solution of the equation
+$$
+\pi_0 = \sum_{k = 0}^\infty P(\mathrm{extinction}|X_1 = k) p_k = \sum_{k = 0}^\infty \pi_0^k p_k,
+$$
+where $p_k = P(X_1 = k) = P(Z = k)$.
+:::
+
+::: callout-tryit
+Let $x_n$ be a branching process with offspring distributed as a binomial random variable with $n = 2$ and $p = 2/3$. Use the formula given in Theorem @thm-extinctionbranch to find $\pi_0$. Confirm via simulation.
+:::
