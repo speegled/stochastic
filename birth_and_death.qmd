@@ -264,6 +264,7 @@ head(queue)
 ```
 
 :::callout-tryit
+- These are the not to hand in problems.
 - Find the expected mean wait time over the course of an 8 hour day. (Hint: you may wish to use `future.apply::future_replicate` to run this simulation in parallel.)
 - Find the expected maximum wait time over the course of an 8 hour day.
 - Suppose the teller's speed is reduced by 5 percent. About what percentage does the expected maximum wait time change?
