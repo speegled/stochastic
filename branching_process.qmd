@@ -49,10 +49,6 @@ $$
 where $\sigma^2$ is the variance of the offsrping process.
 :::
 
-::: callout-tryit
-- Verify via simulation that the mean of $X_{10}$ in the process described at the start of this section is $1$.
-- Verify via simulation that the variance of $X_{10}$ in the process is 5. Note that $X_{10}$ is `x[11]` in our simulation.
-:::
 
 ```{r eval = F, echo = F}
 var(replicate(100000, {
@@ -80,5 +76,6 @@ where $p_k = P(X_1 = k) = P(Z = k)$.
 :::
 
 ::: callout-tryit
-Let $x_n$ be a branching process with offspring distributed as a binomial random variable with $n = 2$ and $p = 2/3$. Use the formula given in Theorem @thm-extinctionbranch to find $\pi_0$. Confirm via simulation.
+- Let $x_n$ be a branching process with offspring distributed as a binomial random variable with $n = 2$ and $p = 2/3$. Use the formula given in Theorem @thm-extinctionbranch to find $\pi_0$. Confirm via simulation.
+- **Not to hand in** Let $x_n$ be a branching process with offspring distributed as a binomial random variable with $n = 3$ and $p = 4/9$. Use the formula given in Theorem @thm-extinctionbranch to find $\pi_0$. Confirm via simulation. (Note: the expected value of $Z$ is $4/3$ in this question and the previous question - can you guess whether the probability of extinction will be the same, lower, or higher?)
 :::
