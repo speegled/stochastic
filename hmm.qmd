@@ -51,7 +51,7 @@ $$
 The emissions probabilities are  $P(Y = \mathrm{red}|X = 1) = .05$,  $P(Y = \mathrm{green}|X = 1) = .95$,  $P(Y = \mathrm{red}|X = 2) = .5$,  $P(Y = \mathrm{red}|X = 2) = .5$.
 
 - Simulate 100 observations from this new HMM.
-- Suppose you observe the three sequences given below. You have to decide whether they were generated from the original process, the modified one we just did, or neither.
+- Suppose you observe the three sequences given below. You have to decide whether they were generated from the original process, the modified one we just did, or neither. You can download the data set [here](https://raw.githubusercontent.com/speegled/stochastic/main/hmm.csv)
 
 ```{r echo=F}
 set.seed(123)
