@@ -54,6 +54,7 @@ The emissions probabilities are  $P(Y = \mathrm{red}|X = 1) = .05$,  $P(Y = \mat
 - Suppose you observe the three sequences given below. You have to decide whether they were generated from the original process, the modified one we just did, or neither.
 
 ```{r echo=F}
+set.seed(123)
 tmat2 <- matrix(c(.9, .1, .1, .9), nrow = 2)
 mchain2 <- new("markovchain", trans = tmat2, states = as.character(1:2))
 unobserved_states2 <- as.integer(rmarkovchain(100, mchain2))
