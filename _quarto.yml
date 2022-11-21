@@ -11,6 +11,7 @@ book:
     - conditional_poisson.qmd
     - birth_and_death.qmd
     - branching_process.qmd
+    - hmm.qmd
 
 format:
   html: 
