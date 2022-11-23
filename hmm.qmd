@@ -17,7 +17,7 @@ T = \begin{pmatrix}
 .25&.25&.5
 \end{pmatrix}
 $$
-The emission probabilities are given by the number of red and green balls in each urn. If, for example. urn $i$ contains $i + 2$ red balls and $i + 5$ green balls, we have $P(Y = \mathrm{red}|X = 1) = 3/9$, $P(Y = \mathrm{green}|X = 1) = 6/9$, $P(Y = \mathrm{red}|X = 2) = 4/11$, $P(Y = \mathrm{red}|X = 1) = 7/11$, $P(Y = \mathrm{red}|X = 3) = 5/13$, $P(Y = \mathrm{red}|X =3) = 8/13$.If we observe a sequence of balls, we cannot be sure which state the balls came from, but we can work out various probabilities associated with the process, which is the goal of this chapter.
+The emission probabilities are given by the number of red and green balls in each urn. If, for example. urn $i$ contains $i + 2$ red balls and $i + 5$ green balls, we have $P(Y = \mathrm{red}|X = 1) = 3/9$, $P(Y = \mathrm{green}|X = 1) = 6/9$, $P(Y = \mathrm{red}|X = 2) = 4/11$, $P(Y = \mathrm{green}|X = 2) = 7/11$, $P(Y = \mathrm{red}|X = 3) = 5/13$, $P(Y = \mathrm{green}|X =3) = 8/13$.If we observe a sequence of balls, we cannot be sure which state the balls came from, but we can work out various probabilities associated with the process, which is the goal of this chapter.
 
 - Speaking. The key to making sense of this as a hidden Markov model is to transform the sound signal into a sequence of outputs. We model that there are, say, 100 different sounds that people make when talking. We take samples of people speaking and break up the samples into many small sound intervals. We cluster the small sound intervals into 100 clusters - these are the possible outputs of the hidden Markov model. When a person says a word, the state that they are in is that they are saying some word (which we don't directly observe, we only observe the sound wave). We split the signal into small pieces and classify each piece as one of the 100 possible sounds. We observe this sequence of sounds, and we are interested in recovering the probabilities that the person was saying various words. A lot of detail would need to be filled in for you to actually be able to do this!
 :::
@@ -32,7 +32,7 @@ tmat <- matrix(c(.5, .25, .25, .25, .5, .25, .25, .25, .5), nrow = 3)
 mchain <- new("markovchain", trans = tmat, states = as.character(1:3))
 unobserved_states <- as.integer(rmarkovchain(100, mchain))
 
-emission_probs <- matrix(c(3, 6, 4, 7, 5, 12), ncol = 2, byrow = T)
+emission_probs <- matrix(c(3, 6, 4, 7, 5, 8), ncol = 2, byrow = T)
 emission_probs <- emission_probs/rowSums(emission_probs) #normalize the rows
 
 sapply(1:100, function(x) {
@@ -54,7 +54,7 @@ The emissions probabilities are  $P(Y = \mathrm{red}|X = 1) = .05$,  $P(Y = \mat
 - Suppose you observe the three sequences given below. You have to decide whether they were generated from the original process, the modified one we just did, or neither. You can download the data set [here](https://raw.githubusercontent.com/speegled/stochastic/main/hmm.csv)
 
 ```{r echo=F}
-set.seed(123)
+#set.seed(123)
 tmat2 <- matrix(c(.9, .1, .1, .9), nrow = 2)
 mchain2 <- new("markovchain", trans = tmat2, states = as.character(1:2))
 unobserved_states2 <- as.integer(rmarkovchain(100, mchain2))
