@@ -4,27 +4,27 @@ In this chapter, we will learn about simulating and training Hidden Markov Model
 
 ## Definition of HMM
 
-A *hidden Markov model (HMM)* is a statistical Markov model in which the system being modeled is assumed to be a Markov process $X$ with unobservable states.[^wiki] There is, however, **something** that can be observed, and the distribution of that something depends on which (unobservable) state that the Markov process $X$ is in. More formally, a hidden Markov model requires two stochastic processes $X_n$ and $Y_n$. The process $X_n$ is a Markov process, whose states we cannot directly observe. The process $Y_n$ follows some distribution, which only depends on $X_n$; that is, it is independent of $X_1, \ldots, X_{n-1}, Y_1, \ldots, Y_{n - 1}$. We assume for simplicity that the possible values of $Y_n$ are the numbers $1, \ldots, M$ and the states of the Markov chain are $1, \ldots, N$. The *emission probabilities* or *output probabilities* are $P(Y_n = i|X_n = j)$.
+A *hidden Markov model (HMM)* is a statistical Markov model in which the system being modeled is assumed to be a Markov process $X$ with unobservable states.[^hmm-1] There is, however, **something** that can be observed, and the distribution of that something depends on which (unobservable) state that the Markov process $X$ is in. More formally, a hidden Markov model requires two stochastic processes $X_n$ and $Y_n$. The process $X_n$ is a Markov process, whose states we cannot directly observe. The process $Y_n$ follows some distribution, which only depends on $X_n$; that is, it is independent of $X_1, \ldots, X_{n-1}, Y_1, \ldots, Y_{n - 1}$. We assume for simplicity that the possible values of $Y_n$ are the numbers $1, \ldots, M$ and the states of the Markov chain are $1, \ldots, N$. The *emission probabilities* or *output probabilities* are $P(Y_n = i|X_n = j)$.
 
-::: {#exm-hmm} 
+[^hmm-1]: This definition comes from [Wikipedia](https://en.wikipedia.org/wiki/Hidden_Markov_model)
+
+::: {#exm-hmm}
 Examples of Hidden Markov Models
 
-- Suppose there are three urns with different numbers of red and green balls in them. You start by randomly selecting one of the urns, drawing a ball from it and recording only the color of the ball. Tou replace the ball back in the urn once you have recorded the color. You then either pick a ball from the same urn (with probability 0.5) or you randomly pick one of the other urns, and draw a ball from that urn. Again, you only record the color of the ball that was picked. Continuing this process is a hidden Markov process. The underlying Markov process has states 1-3 and transition matrix
-$$
-T = \begin{pmatrix}
-.5&.25&.25\\
-.25&.5&.25\\
-.25&.25&.5
-\end{pmatrix}
-$$
-The emission probabilities are given by the number of red and green balls in each urn. If, for example. urn $i$ contains $i + 2$ red balls and $i + 5$ green balls, we have $P(Y = \mathrm{red}|X = 1) = 3/9$, $P(Y = \mathrm{green}|X = 1) = 6/9$, $P(Y = \mathrm{red}|X = 2) = 4/11$, $P(Y = \mathrm{green}|X = 2) = 7/11$, $P(Y = \mathrm{red}|X = 3) = 5/13$, $P(Y = \mathrm{green}|X =3) = 8/13$.If we observe a sequence of balls, we cannot be sure which state the balls came from, but we can work out various probabilities associated with the process, which is the goal of this chapter.
+-   Suppose there are three urns with different numbers of red and green balls in them. You start by randomly selecting one of the urns, drawing a ball from it and recording only the color of the ball. Tou replace the ball back in the urn once you have recorded the color. You then either pick a ball from the same urn (with probability 0.5) or you randomly pick one of the other urns, and draw a ball from that urn. Again, you only record the color of the ball that was picked. Continuing this process is a hidden Markov process. The underlying Markov process has states 1-3 and transition matrix $$
+    T = \begin{pmatrix}
+    .5&.25&.25\\
+    .25&.5&.25\\
+    .25&.25&.5
+    \end{pmatrix}
+    $$ The emission probabilities are given by the number of red and green balls in each urn. If, for example. urn $i$ contains $i + 2$ red balls and $i + 5$ green balls, we have $P(Y = \mathrm{red}|X = 1) = 3/9$, $P(Y = \mathrm{green}|X = 1) = 6/9$, $P(Y = \mathrm{red}|X = 2) = 4/11$, $P(Y = \mathrm{green}|X = 2) = 7/11$, $P(Y = \mathrm{red}|X = 3) = 5/13$, $P(Y = \mathrm{green}|X =3) = 8/13$.If we observe a sequence of balls, we cannot be sure which state the balls came from, but we can work out various probabilities associated with the process, which is the goal of this chapter.
 
-- Speaking. The key to making sense of this as a hidden Markov model is to transform the sound signal into a sequence of outputs. We model that there are, say, 100 different sounds that people make when talking. We take samples of people speaking and break up the samples into many small sound intervals. We cluster the small sound intervals into 100 clusters - these are the possible outputs of the hidden Markov model. When a person says a word, the state that they are in is that they are saying some word (which we don't directly observe, we only observe the sound wave). We split the signal into small pieces and classify each piece as one of the 100 possible sounds. We observe this sequence of sounds, and we are interested in recovering the probabilities that the person was saying various words. A lot of detail would need to be filled in for you to actually be able to do this!
+-   Speaking. The key to making sense of this as a hidden Markov model is to transform the sound signal into a sequence of outputs. We model that there are, say, 100 different sounds that people make when talking. We take samples of people speaking and break up the samples into many small sound intervals. We cluster the small sound intervals into 100 clusters - these are the possible outputs of the hidden Markov model. When a person says a word, the state that they are in is that they are saying some word (which we don't directly observe, we only observe the sound wave). We split the signal into small pieces and classify each piece as one of the 100 possible sounds. We observe this sequence of sounds, and we are interested in recovering the probabilities that the person was saying various words. A lot of detail would need to be filled in for you to actually be able to do this!
 :::
 
 ## Simulation
 
-Let's simulate a hidden Markov model. We return to  @exm-hmm, and create a sample of length 100 from this HMM.
+Let's simulate a hidden Markov model. We return to @exm-hmm, and create a sample of length 100 from this HMM.
 
 ```{r}
 library(markovchain)
@@ -41,17 +41,15 @@ sapply(1:100, function(x) {
 ```
 
 ::: callout-tryit
-Suppose we have a second HMM, similar to the one we just discussed, but there are only two urns. The transition matrix is 
-$$
+Suppose we have a second HMM, similar to the one we just discussed, but there are only two urns. The transition matrix is $$
 T = \begin{pmatrix}
 .9&.1\\
 .1&.9
 \end{pmatrix}
-$$
-The emissions probabilities are  $P(Y = \mathrm{red}|X = 1) = .05$,  $P(Y = \mathrm{green}|X = 1) = .95$,  $P(Y = \mathrm{red}|X = 2) = .5$,  $P(Y = \mathrm{red}|X = 2) = .5$.
+$$ The emissions probabilities are $P(Y = \mathrm{red}|X = 1) = .05$, $P(Y = \mathrm{green}|X = 1) = .95$, $P(Y = \mathrm{red}|X = 2) = .5$, $P(Y = \mathrm{red}|X = 2) = .5$.
 
-- Simulate 100 observations from this new HMM.
-- Suppose you observe the three sequences given below. You have to decide whether they were generated from the original process, the modified one we just did, or neither. You can download the data set [here](https://raw.githubusercontent.com/speegled/stochastic/main/hmm.csv)
+-   Simulate 100 observations from this new HMM.
+-   Suppose you observe the three sequences given below. You have to decide whether they were generated from the original process, the modified one we just did, or neither. You can download the data set [here](https://raw.githubusercontent.com/speegled/stochastic/main/hmm.csv)
 
 ```{r echo=F}
 set.seed(123)
@@ -76,8 +74,146 @@ list(a1, a2, a3)[sample(1:3)]
 ```
 :::
 
+## State Prediction
+
+Sometimes we want to predict the state of a model given the output(s) of the model. Let's consider a very simple example of an HMM, and we will try to predict the states. The Markov process is a two-state process which has transition probabilities given by 
+$$
+T = \begin{pmatrix}
+.82&.18\\
+.18&.82
+\end{pmatrix}
+$$ 
+We assume that we **know** the transition matrix for now. The names of the states are "0" and "1", and we call the random sequence of states $(X_n)$. The possible emissions are also "2" and "3" and we call the sequence of emissions $(Y_n)$.The emission probabilities are given by:
+
+| P(Yn = 2)                  | P(Yn = 3)                   |
+|----------------------------|-----------------------------|
+| $P(Y_n = 2|X_n = 0) = 1$   | $P(Y_n = 3|X_n = 0) = 0)$   |
+| $P(Y_n = 2|X_n = 1) = 0.5$ | $P(Y_n = 3|X_n = 1) = 0.5)$ |
+
+If $Y_n = 3$, then we **know** that $X_n = 1$ and the Markov process is in state 1. Let's think about our prediction of what state we are in when $Y_n = 2$ and is in-between two emissions of 3. For example, we could have the sequence $(y_1 = 3, y_2 = 2, y_3 = 3)$. We **know** that $x_1 = 1$ and $x_3 = 1$. We don't know about $x_2$, so we think - which is more likely? We may have switched to state 0, output a 2, and then switched back to state 1 and output a 3. The probability of that is $$.18 \times 1 \times .18 \times .5 = .0162$$ 
+**OR** we could have stayed in state 1, output a 2, and then stayed in state 1 and output a 3. The probability of that is 
+$$.82 \times .5 \times .82 \times .5 = .1681$$ 
+It is much more likely that we stayed in state 1 than that we switched to state 2!  
+
+
+::: callout-tryit
+Suppose you observe the sequence $(y_1 = 3, y_2 = y_3 = 2, y_4 = 3)$. The possible sequences of states are:
+
+x1|x2|x3|x4
+--|--|--|--
+3 |3 |3 |3
+3 |2 |3 |3
+3 |2 |2 |3
+3 |3 |2 |3
+
+Which sequence is the most likely?
+:::
+
+```{r eval=F, echo=F}
+.18^2 * .82 * .5
+.82^3 * .5^3
+
+#in general it is .2^2 * .8^(n - 3) * .5 and .4^(n - 1)
+n <- 3:10
+.18^2 * .82^(n - 3) * .5
+.41 ^ (n - 1)
+```
+
+
+After doing the above problem, I hope you see that the most likely thing when you have a string of "2" between two "3" is that the chain either moves right away to state 0 and stays there to the end, or it stays in state 1 the entire time. That is a crucial observation for the next problem.
+
+::: callout-tryit
+Suppose you observe the sequence $(y_1 = 3, y_2 = y_3 = \cdots y_{n - 1} = 2, y_n = 3)$. The possible sequence of states are:
+
+x1|x2|x3|...|xn
+--|--|--|--
+3 |3 |3 |3|3
+3 |2 |2 |2|3
+
+a. Find the **smallest** value of $n$ for which it is more likely that the Markov chain switched to state 2 than that it stayed in state 3. How many values of 2 in a row do you need to see before it is more likely that the hidden states have switched to state 0?
+
+b. Find the sequence of outputs given below, what is the most likely sequence of states? Assume that the initial state of the Markov chain is chosen randomly between 0 and 1.
+
+```{r echo = F, warning = F, message = F}
+set.seed(11271107)
+tr <- matrix(c(.82, .18, .18, .82), nrow = 2)
+library(markovchain)
+mchain <- new("markovchain", trans = tr, states = c("0", "1"))
+states <- rmarkovchain(100, mchain)
+
+emission_probs <- matrix(c(1, 0, 1, 1), ncol = 2, byrow = T)
+emission_probs <- emission_probs/rowSums(emission_probs)
+
+sapply(1:100, function(x) {
+  sample(c("2", "3"), size = 1, prob = emission_probs[as.integer(states[x]) + 1,])
+})
+```
+:::
+
+This process gets more complicated when the HMM is more complicated! Depending on student interest, we can discuss how to do this in a more general setting later in the semester.
+
+## Estimating the HMM parameters
+
+In this section, we see how to estimate the transition probabilities and emission probabilities for a hidden Markov process given a sequence of outputs and a sequence of hidden states. We will also see how to do it when we only have the sequence of outputs and an idea about the number of hidden states, but no information as to which state is associated with which output. 
+
+For simplicity, we assume we have two states, "0" and "1", and we have two outputs, "2" and "3". The general case is not much more challenging. We assume that we also have a data set that contains a sequence of states and a corresponding sequence of outputs. For example, the outputs could be words in sentences, and the states could be the part of speech of the word. There is some reason to think that parts of speech in a sentence may behave like a Markov process, and each part of speech has a certain probability distribution of words. The data in this case would be sentences, where each word has been tagged with the correct part of speech.
+
+To estimate the parameters in our model, we would estimate the transition probabilities in the hidden Markov process, and the emission probabilities separately. Let's look at an example.
+
+Suppose that the transition matrix is 
+$$
+T = \begin{pmatrix}
+.8&.2\\
+.4&.6
+\end{pmatrix}
+$$
+and the emission probabilities are
+
+| P(Yn = 2)                  | P(Yn = 3)                   |
+|----------------------------|-----------------------------|
+| $P(Y_n = 2|X_n = 0) = .3$   | $P(Y_n = 3|X_n = 0) = 07$   |
+| $P(Y_n = 2|X_n = 1) = 0.5$ | $P(Y_n = 3|X_n = 1) = 0.5$ |
+
+We can simulate data as follows:
+
+```{r}
+set.seed(4930)
+tr <- matrix(c(.8, .2, .4, .6), byrow = T, nrow = 2)
+library(markovchain)
+mchain <- new("markovchain", trans = tr, states = c("0", "1"))
+states <- rmarkovchain(100, mchain)
+
+emission_probs <- matrix(c(3, 7, 1, 1), ncol = 2, byrow = T)
+emission_probs <- emission_probs/rowSums(emission_probs)
+
+outputs <- sapply(1:100, function(x) {
+  sample(c("2", "3"), size = 1, prob = emission_probs[as.integer(states[x]) + 1,])
+})
+```
+
+We have two sequences, `states` gives the hidden states of the Markov process and `outputs` gives the actual outputs of the HMM. To estimate the parameters associated with the Markov process, we only consider `states`. We compute the observed percentage of times that state 0 transitioned to state 0 and 1, respectively, and that is our estimate for the first row of the transition matrix. We repeat for state 1 and the second row of the transition matrix. 
+
+```{r}
+proportions(table(states[-100], states[-1]), margin = 1)
+```
+
+We see that out estimated transition matrix is off, but it seems to be related to the true partition matrix given above. To estimate the emission probabilities, we compute the percentage of emissions of each type while we are in each state. The easiest way to do this (perhaps) is to put everything into a data frame and use `dplyr` tools.
+
+```{r warning = F, message = F}
+hmm <- data.frame(state = states, output = outputs)
+library(dplyr)
+
+hmm %>% 
+  group_by(state) %>% 
+  summarize(emission_prob = proportions(table(output)))
+```
+
+Again, we see that the estimated values of .29, .71, .53, and .47 have some relationship to the true values of .3, .7, .5, and .5.
+
+::: callout-tryit
+Estimate the parameters of a three state HMM with 5 possible outputs given the data which you can download [here](https://????) 
+:::
 
 
 
 
-[^wiki]: This definition comes from [Wikipedia](https://en.wikipedia.org/wiki/Hidden_Markov_model)
