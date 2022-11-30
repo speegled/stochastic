@@ -152,6 +152,78 @@ sapply(1:100, function(x) {
 
 This process gets more complicated when the HMM is more complicated! Depending on student interest, we can discuss how to do this in a more general setting later in the semester.
 
+### A more realistic example
+
+Here we consider an example where 
+$$
+T = \begin{pmatrix}
+.7&.3\\
+.2&.8
+\end{pmatrix}
+$$ 
+and the emission probabilities are
+
+| P(Yn = 2)                  | P(Yn = 3)                   |
+|----------------------------|-----------------------------|
+| $P(Y_n = 2|X_n = 0) = 0.9$   | $P(Y_n = 3|X_n = 0) = 0.1$   |
+| $P(Y_n = 2|X_n = 1) = 0.5$ | $P(Y_n = 3|X_n = 1) = 0.5$ |
+
+Our goal is still the same - we want to consider all possible sequences of states and pick the one for which the observed sequence is most likely. For **short** sequences, we can do that by brute force. Let's suppose we have the sequence `c(2,2,3,3,3)` and find the most likely sequence of states. We assumem that the initial state is chosen randomly with a 50/50 probbability of each choice. It seems reasonable to guess that the two most likely state sequences are `c(0,0,1,1,1)` and `c(1,1,1,1,1)`. Let's first compute the probability of observing the output under each of those state sequences.
+
+```{r}
+.5 * .7 * .3 * .8 * .8 * .9 * .9 * .5 * .5 * .5 #00111
+
+.5 * .8 * .8 * .8 * .8 * .5^5 #11111
+```
+
+Now we check by computing all of the probabilities.
+
+```{r}
+states <- combinat::hcube(x = rep(2, 5), translation =  -1) #these are the 32 possible sequences of 5 states
+head(states)
+output <- c(2,2,3,3,3)
+
+tmat <- matrix(c(.7, .3, .2, .8), byrow = T,nrow = 2)
+emat <- matrix(c(.9, .1, .5, .5), byrow = T, nrow = 2)
+
+compute_prob <- function(hidden_states) {
+  sprob <- prod(sapply(1:4, function(x) {
+    tmat[hidden_states[x] + 1, hidden_states[x + 1] + 1]
+  })) * .5 #probability of state sequence
+  eprob <- prod(sapply(1:5, function(x) {
+    emat[hidden_states[x] + 1, output[x] - 1]
+  })) #probability of emissions given state sequence
+  eprob * sprob
+}
+states <- cbind(states, apply(states, 1, compute_prob))
+library(tidyverse)
+as.data.frame(states) %>% 
+  arrange(-V6)
+```
+
+
+::: callout-tryit
+Suppose the transmission probabilities are
+$$
+T = \begin{pmatrix}
+.9&.1\\
+.5&.5
+\end{pmatrix}
+$$ 
+and the emission probabilities are
+
+| P(Yn = 2)                  | P(Yn = 3)                   |
+|----------------------------|-----------------------------|
+| $P(Y_n = 2|X_n = 0) = 0.85$ | $P(Y_n = 3|X_n = 0) = 0.15$ |
+| $P(Y_n = 2|X_n = 1) = 0.4$ | $P(Y_n = 3|X_n = 1) = 0.6$  |
+
+and the transition probabilities are the same as in the previous example. Find the most likely sequence of states
+if the output is `c(2,3,2,2,2,3,3,3)`.
+:::
+
+To finish this section, we re-do the problem above using the Viterbi algorithm, or at least, a method of doing this problem that is inspired by the Viterbi algorithm. If you understand how this works, then you are well on your way to understanding the Viterbi algorithm. The crucial observation is that if the optimal sequence of states is $(s_1^*, \ldots, s_8^*)$, then the partial sequence of states $(s_1^*, \ldots, s_k^*)$ is an optimal sequence of states for the partial sequence of outputs $(y_1, \ldots, y_k)$. Therefore, we only need to keep track of the **optimal** sequences of states of length $k$ for the various possible terminating states. Since in our example, we only have two states, for each $k$, we need to keep track of two sequences of states and their associated likelihoods.
+
+
 ## Estimating the HMM parameters
 
 In this section, we see how to estimate the transition probabilities and emission probabilities for a hidden Markov process given a sequence of outputs and a sequence of hidden states. We will also see how to do it when we only have the sequence of outputs and an idea about the number of hidden states, but no information as to which state is associated with which output. 
